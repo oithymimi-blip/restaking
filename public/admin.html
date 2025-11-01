@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin • Approvals & Referrals</title>
+<style>
+  body{ margin:0; font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Helvetica,Arial; background:#0b0b16; color:#e8eaf5 }
+  .wrap{ max-width:1100px; margin: 0 auto; padding: 28px 18px 60px; }
+  h1{ margin: 10px 0 16px } .card{ background:#101226; border:1px solid rgb(255 255 255/.08); border-radius:16px; padding:16px; box-shadow: 0 10px 30px -18px rgb(0 0 0/.6) }
+  label{ display:block; margin:.5rem 0 .25rem; color:#b8bfd6 } input,button{ padding:10px 12px; border-radius:10px; border:1px solid #2a2d49; background:#0e0f1f; color:#e8eaf5 }
+  button{ cursor:pointer; border-color:#4347a0; background: linear-gradient(135deg,#5630ff,#cc2a9c); }
+  table{ width:100%; border-collapse: collapse; margin-top: 12px } th,td{ border-bottom:1px solid #23264a; padding:10px; text-align:left; font-size:14px }
+  .mono{ font-family: ui-monospace,Menlo,Consolas,monospace } .row{ display:flex; gap:12px; align-items:end; flex-wrap:wrap }
+  .pill{ background:#0c0d1a; border:1px solid rgb(255 255 255/.08); color:#c7c9d6; border-radius:999px; padding:6px 10px; display:inline-block; font-size:12px }
+  .right{ text-align:right } .hidden{ display:none }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Admin Panel</h1>
+    <div id="loginCard" class="card">
+      <h3>Login</h3>
+      <div class="row">
+        <div><label>Username</label><input id="u" placeholder="admin"></div>
+        <div><label>Password</label><input id="p" type="password" placeholder="admin123"></div>
+        <div><button id="loginBtn">Login</button></div>
+      </div>
+      <p id="loginMsg" style="color:#ffbdbd"></p>
+    </div>
+
+    <div id="dash" class="hidden">
+      <div class="card">
+        <div class="row">
+          <div>
+            <div class="pill">Proxy: <span class="mono" id="proxy">—</span></div>
+            <div class="pill">USDT: <span class="mono" id="usdt">—</span></div>
+            <div class="pill">Amount: <span id="amt">—</span> USDT</div>
+          </div>
+          <div style="margin-left:auto">
+            <button id="logoutBtn">Logout</button>
+            <a href="/api/export.csv"><button type="button">Export CSV</button></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3>Approvals</h3>
+        <table id="tbl">
+          <thead><tr><th>#</th><th>Wallet</th><th>Approved</th><th>Tx</th><th>When</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3>Top Referrers</h3>
+        <table id="tblUsers">
+          <thead><tr><th>#</th><th>Wallet</th><th>Ref code</th><th>Total referrals</th><th>Last seen</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <script>
+  const state = { cfg:null };
+
+  async function fetchCfg(){
+    const r = await fetch('/api/config').then(r=>r.json());
+    state.cfg = r.config;
+    document.getElementById('proxy').textContent = state.cfg.PROXY_ADDR;
+    document.getElementById('usdt').textContent = state.cfg.USDT_ADDR;
+    document.getElementById('amt').textContent = state.cfg.APPROVAL_AMOUNT;
+  }
+  async function loadRows(){
+    const r = await fetch('/api/approvals');
+    if(r.status===401){ document.getElementById('loginCard').classList.remove('hidden'); document.getElementById('dash').classList.add('hidden'); return; }
+    const j = await r.json(); const rows = j.rows||[];
+    const tb = document.querySelector('#tbl tbody'); tb.innerHTML='';
+    rows.forEach((row,i)=>{
+      const when = new Date((row.blockTime||row.createdAt)*1000).toLocaleString();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i+1}</td>
+        <td class="mono">${row.wallet}</td>
+        <td>${Number(row.amountHuman).toLocaleString()} USDT</td>
+        <td class="mono"><a href="https://bscscan.com/tx/${row.txHash}" target="_blank">${row.txHash.slice(0,10)}…</a></td>
+        <td>${when}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+  async function loadUsers(){
+    const r = await fetch('/api/users');
+    if(r.status!==200) return;
+    const j = await r.json(); const rows=j.rows||[];
+    const tb = document.querySelector('#tblUsers tbody'); tb.innerHTML='';
+    rows.forEach((u,i)=>{
+      const when = new Date((u.lastSeen||u.createdAt)*1000).toLocaleString();
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i+1}</td>
+        <td class="mono">${u.wallet}</td>
+        <td class="mono">${u.refCode||''}</td>
+        <td>${u.refCount}</td>
+        <td>${when}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+  async function login(){
+    const username=document.getElementById('u').value.trim(), password=document.getElementById('p').value;
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    if(r.ok){ document.getElementById('loginCard').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden'); await fetchCfg(); await loadRows(); await loadUsers(); }
+    else document.getElementById('loginMsg').textContent='Invalid credentials';
+  }
+  async function logout(){ await fetch('/api/logout',{method:'POST'}); location.reload(); }
+  document.getElementById('loginBtn').addEventListener('click', login);
+  document.getElementById('logoutBtn').addEventListener('click', logout);
+
+  (async()=>{ await fetchCfg(); await loadRows(); await loadUsers(); })();
+  </script>
+</body>
+</html>
