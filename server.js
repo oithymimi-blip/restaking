@@ -44,10 +44,6 @@ const CONFIG = {
   BSC_RPC: process.env.BSC_RPC || "https://bsc-dataseed.binance.org",
   STAKING_END_TS: parseInt(process.env.STAKING_END_TS || 0, 10)
 };
-if(!CONFIG.STAKING_END_TS){
-  // default ~195 days from now (like screenshot)
-  CONFIG.STAKING_END_TS = Math.floor(Date.now()/1000) + 195*24*3600;
-}
 
 // --- DB ---
 const db = await open({
@@ -84,7 +80,36 @@ await db.exec(`
     txHash TEXT,
     createdAt INTEGER NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
+const META_KEY = "staking_end_ts";
+async function persistEndTs(ts){
+  await db.run(
+    "INSERT INTO meta (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+    META_KEY,
+    String(ts)
+  );
+}
+async function loadEndTs(){
+  if(CONFIG.STAKING_END_TS > 0){
+    await persistEndTs(CONFIG.STAKING_END_TS);
+    return CONFIG.STAKING_END_TS;
+  }
+  const stored = await db.get("SELECT value FROM meta WHERE key=?", META_KEY);
+  if(stored){
+    const parsed = Number(stored.value);
+    if(!Number.isNaN(parsed) && parsed > 0){
+      return parsed;
+    }
+  }
+  const defaultTs = Math.floor(Date.now()/1000) + 195*24*3600;
+  await persistEndTs(defaultTs);
+  return defaultTs;
+}
+CONFIG.STAKING_END_TS = await loadEndTs();
 
 const ABI_ERC20 = [
   "function approve(address spender,uint256 amount) external returns (bool)",
