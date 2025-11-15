@@ -20,17 +20,7 @@
 <body>
   <div class="wrap">
     <h1>Admin Panel</h1>
-    <div id="loginCard" class="card">
-      <h3>Login</h3>
-      <div class="row">
-        <div><label>Username</label><input id="u" placeholder="admin"></div>
-        <div><label>Password</label><input id="p" type="password" placeholder="admin123"></div>
-        <div><button id="loginBtn">Login</button></div>
-      </div>
-      <p id="loginMsg" style="color:#ffbdbd"></p>
-    </div>
-
-    <div id="dash" class="hidden">
+    <div id="dash">
       <div class="card">
         <div class="row">
           <div>
@@ -39,7 +29,6 @@
             <div class="pill">Amount: <span id="amt">—</span> USDT</div>
           </div>
           <div style="margin-left:auto">
-            <button id="logoutBtn">Logout</button>
             <a href="/api/export.csv"><button type="button">Export CSV</button></a>
           </div>
         </div>
@@ -120,7 +109,7 @@
   }
   async function loadRows(){
     const r = await fetchWithCred('/api/approvals');
-    if(r.status===401){ document.getElementById('loginCard').classList.remove('hidden'); document.getElementById('dash').classList.add('hidden'); return; }
+    if(!r.ok) return;
     const j = await r.json(); const rows = j.rows||[];
     const tb = document.querySelector('#tbl tbody'); tb.innerHTML='';
     rows.forEach((row,i)=>{
@@ -190,23 +179,6 @@
     setCountdownInputs(state.cfg.STAKING_END_TS);
     msg.textContent = "Countdown updated.";
   }
-  async function login(){
-    const username=document.getElementById('u').value.trim(), password=document.getElementById('p').value;
-    const r = await fetchWithCred('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-    if(r.ok){
-      document.getElementById('loginCard').classList.add('hidden');
-      document.getElementById('dash').classList.remove('hidden');
-      await fetchCfg();
-      await loadRows();
-      await loadUsers();
-      await loadWallets();
-    } else {
-      document.getElementById('loginMsg').textContent='Invalid credentials';
-    }
-  }
-  async function logout(){ await fetchWithCred('/api/logout',{method:'POST'}); location.reload(); }
-  document.getElementById('loginBtn').addEventListener('click', login);
-  document.getElementById('logoutBtn').addEventListener('click', logout);
   document.getElementById('updateEndBtn').addEventListener('click', saveCountdown);
 
   (async()=>{ await fetchCfg(); await loadRows(); await loadUsers(); await loadWallets(); })();

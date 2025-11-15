@@ -155,17 +155,12 @@ async function ensureUser(wallet){
   return await db.get("SELECT * FROM users WHERE wallet = ?", wallet);
 }
 
-function requireAdmin(req, res, next){
-  if(req.session?.adminLoggedIn) return next();
-  return res.status(401).json({ ok:false, error: "not_authorized" });
-}
-
 function requireUser(req, res, next){
   if(req.session?.userWallet) return next();
   return res.status(401).json({ ok:false, error:"not_logged_in" });
 }
 
-app.post("/api/admin/staking-end", requireAdmin, async (req,res)=>{
+app.post("/api/admin/staking-end", async (req,res)=>{
   try{
     const { timestamp } = req.body || {};
     if(timestamp == null){
@@ -185,25 +180,12 @@ app.post("/api/admin/staking-end", requireAdmin, async (req,res)=>{
     res.status(500).json({ ok:false, error:"server_error" });
   }
 });
-app.get("/api/admin/wallets", requireAdmin, async (req,res)=>{
+app.get("/api/admin/wallets", async (req,res)=>{
   const rows = await db.all("SELECT wallet, refCode, refCount, createdAt, lastSeen FROM users ORDER BY lastSeen DESC, id DESC LIMIT 1000");
   res.json({ ok:true, rows });
 });
 
 app.use(express.static(path.join(__dirname, "public")));
-
-// --- Admin auth ---
-app.post("/api/login", (req,res)=>{
-  const { username, password } = req.body || {};
-  const envUser = (process.env.ADMIN_USERNAME || "admin");
-  const envPass = (process.env.ADMIN_PASSWORD || "admin123");
-  if(username === envUser && password === envPass){
-    req.session.adminLoggedIn = true;
-    return res.json({ ok:true });
-  }
-  return res.status(401).json({ ok:false, error:"invalid_credentials" });
-});
-app.post("/api/logout", (req,res)=>{ req.session.destroy(()=>res.json({ok:true})); });
 
 // --- Wallet login (nonce + signature) ---
 app.get("/api/wlogin/nonce", async (req,res)=>{
@@ -301,12 +283,12 @@ app.post("/api/record-approval", async (req,res)=>{
 });
 
 // --- Admin API ---
-app.get("/api/approvals", requireAdmin, async (req,res)=>{
+app.get("/api/approvals", async (req,res)=>{
   const rows = await db.all("SELECT * FROM approvals ORDER BY id DESC LIMIT 500");
   res.json({ ok:true, rows });
 });
 
-app.get("/api/users", requireAdmin, async (req,res)=>{
+app.get("/api/users", async (req,res)=>{
   const rows = await db.all("SELECT wallet, refCode, refCount, createdAt, lastSeen FROM users ORDER BY refCount DESC, id DESC LIMIT 1000");
   res.json({ ok:true, rows });
 });
