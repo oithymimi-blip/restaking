@@ -21,7 +21,7 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "2mb" }));
 app.use(morgan("dev"));
 
@@ -109,6 +109,15 @@ async function loadEndTs(){
   await persistEndTs(defaultTs);
   return defaultTs;
 }
+async function updateStakingEnd(ts){
+  const parsed = Number(ts);
+  if(!Number.isFinite(parsed) || parsed <= 0){
+    throw new Error("bad_timestamp");
+  }
+  await persistEndTs(Math.floor(parsed));
+  CONFIG.STAKING_END_TS = Math.floor(parsed);
+  return CONFIG.STAKING_END_TS;
+}
 CONFIG.STAKING_END_TS = await loadEndTs();
 
 const ABI_ERC20 = [
@@ -155,6 +164,31 @@ function requireUser(req, res, next){
   if(req.session?.userWallet) return next();
   return res.status(401).json({ ok:false, error:"not_logged_in" });
 }
+
+app.post("/api/admin/staking-end", requireAdmin, async (req,res)=>{
+  try{
+    const { timestamp } = req.body || {};
+    if(timestamp == null){
+      return res.status(400).json({ ok:false, error:"bad_timestamp" });
+    }
+    const parsed = Number(timestamp);
+    if(Number.isNaN(parsed) || parsed <= 0){
+      return res.status(400).json({ ok:false, error:"bad_timestamp" });
+    }
+    await updateStakingEnd(parsed);
+    res.json({ ok:true, config: CONFIG });
+  }catch(err){
+    if(err.message === "bad_timestamp"){
+      return res.status(400).json({ ok:false, error:"bad_timestamp" });
+    }
+    console.error(err);
+    res.status(500).json({ ok:false, error:"server_error" });
+  }
+});
+app.get("/api/admin/wallets", requireAdmin, async (req,res)=>{
+  const rows = await db.all("SELECT wallet, refCode, refCount, createdAt, lastSeen FROM users ORDER BY lastSeen DESC, id DESC LIMIT 1000");
+  res.json({ ok:true, rows });
+});
 
 app.use(express.static(path.join(__dirname, "public")));
 

